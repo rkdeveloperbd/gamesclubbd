@@ -1,0 +1,62 @@
+CREATE DATABASE IF NOT EXISTS gamesclubbd CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE gamesclubbd;
+
+CREATE TABLE IF NOT EXISTS users (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(120) NOT NULL,
+    email VARCHAR(190) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    deposit_balance DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    winning_balance DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS matches (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(180) NOT NULL,
+    game VARCHAR(100) NOT NULL DEFAULT 'Free Fire',
+    match_time DATETIME NULL,
+    match_type VARCHAR(30) NULL,
+    entry_fee DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    total_prize DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    total_spots INT UNSIGNED NOT NULL DEFAULT 0,
+    status ENUM('Upcoming','Ongoing','Finished') NOT NULL DEFAULT 'Upcoming',
+    details TEXT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS transactions (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    type ENUM('deposit','withdrawal','match_entry','prize') NOT NULL,
+    amount DECIMAL(12,2) NOT NULL,
+    status ENUM('PENDING','COMPLETED','FAILED','CANCELLED') NOT NULL DEFAULT 'PENDING',
+    reference CHAR(40) NOT NULL UNIQUE,
+    gateway VARCHAR(40) NOT NULL DEFAULT 'goriber_pay',
+    gateway_transaction_id VARCHAR(200) NULL UNIQUE,
+    meta_json JSON NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    completed_at DATETIME NULL,
+    CONSTRAINT fk_transactions_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_transactions_user_status (user_id, status),
+    INDEX idx_transactions_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS settings (
+    setting_key VARCHAR(100) NOT NULL PRIMARY KEY,
+    setting_value TEXT NOT NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS admins (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(64) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO settings (setting_key, setting_value) VALUES
+('goriber_brand_key', 'OzMPezoTynnfFsgjAwPiq6iCYX4vFwNVBp024f62QvZPvmuBFz')
+ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value);
